@@ -8,15 +8,15 @@ public class ClientHandler implements Runnable {
     public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
 
     private Socket socket;
-
+    private DatabaseConnection dbConn;
     private ObjectInputStream objectInputStream;
     private ObjectOutputStream objectOutputStream;
-    private String clientUsername;
+    private String clientFullName;
 
     public ClientHandler(Socket socket) {
         try {
             this.socket= socket ;
-
+            this.dbConn = new DatabaseConnection();
             this.objectInputStream = new ObjectInputStream(socket.getInputStream());
             this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
 
@@ -33,13 +33,12 @@ public class ClientHandler implements Runnable {
 
     @Override
     public void run() {
-        Request requestRecieved;
+        Request requestReceived;
 
         while(socket.isConnected()){
             try {
-                requestRecieved = (Request) objectInputStream.readObject();
-                System.out.println(requestRecieved);
-                broadcastMessage(requestRecieved);
+                requestReceived = (Request) objectInputStream.readObject();
+                requestHandler(requestReceived);
             }catch (IOException | ClassNotFoundException e){
                 closeEverything(socket,objectInputStream,objectOutputStream);
                 break;
@@ -50,7 +49,7 @@ public class ClientHandler implements Runnable {
     public void broadcastMessage(Request request){
         for (ClientHandler clientHandler: clientHandlers) {
             try {
-                if (!clientHandler.clientUsername.equals(clientHandler)){
+                if (!clientHandler.clientFullName.equals(clientHandler)){
                    clientHandler.objectOutputStream.writeObject(request);
                    System.out.println(request.toString());
                 }
@@ -59,9 +58,11 @@ public class ClientHandler implements Runnable {
             }
         }
     }
+
     public void removeClientHandler(){
         clientHandlers.remove(this);
     }
+
     public void closeEverything(Socket socket,ObjectInputStream objectInputStream,ObjectOutputStream objectOutputStream){
         removeClientHandler();
         try {
@@ -80,6 +81,21 @@ public class ClientHandler implements Runnable {
         }
     }
 
+
+
+    public void requestHandler(Request request){
+        if (request.getRequest().equals("signin")){
+            String name =dbConn.login(request.getEmail(), request.getPassword());
+            if (name != null){
+                this.clientFullName = name;
+                clientHandlers.add(this);
+                Request loginRequest = new Request("signinAnswer",name);
+            }
+
+        }else if (request.getRequest().equals("signup")){
+
+        }
+    }
 
 }
 

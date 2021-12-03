@@ -1,5 +1,7 @@
 import java.io.*;
 import java.net.Socket;
+import java.sql.SQLOutput;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Client {
@@ -7,15 +9,18 @@ public class Client {
 
     private ObjectInputStream objectInputStream;
     private ObjectOutputStream objectOutputStream;
-    private String username;
+    private String fullName;
+    private Scanner scanner;
+    private ArrayList<String> activeUsers;
 
-    public Client(Socket socket,String username){
+    public Client(Socket socket){
         try {
             this.socket = socket;
-
+            scanner = new Scanner(System.in);
             this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
             this.objectInputStream = new ObjectInputStream(socket.getInputStream());
-            this.username = username;
+            login();
+            this.activeUsers.add("Everyone");
 
 
         }catch (IOException  e){
@@ -24,7 +29,7 @@ public class Client {
     }
     public void sendMessage(){
         try {
-            Scanner scanner = new Scanner(System.in);
+
             while (socket.isConnected()){
                 String messageToSend = scanner.nextLine();
                 Request r1 = new Request("message","yakup",messageToSend);
@@ -69,17 +74,38 @@ public class Client {
             e.printStackTrace();
         }
     }
+    private void login() throws IOException {
+        System.out.println("enter email");
+        String email = scanner.nextLine();
+        System.out.println("enter password");
+        String password = scanner.nextLine();
+        System.out.println(email+password);
+        Request loginRequest = new Request("signin",email,password);
+        System.out.println(loginRequest);
+        objectOutputStream.writeObject(loginRequest);
+    }
+
+    private void requestHandler(Request request){
+        if (request.getRequest().equals("Message")){
+            System.out.println(request.getMessage());
+        }else if (request.getRequest().equals("activeUsers")){
+            this.activeUsers.clear();
+            this.activeUsers.add("Everyone");
+            this.activeUsers.addAll(request.getOnlineUsers());
+        }
+
+    }
+
 
     public static void main(String[] args) throws IOException {
         Scanner scan = new Scanner(System.in);;
-        System.out.println("Enter username for the group chat: ");
-        String username = scan.nextLine();
         Socket socket = new Socket("localhost",1234);
-        Client client = new Client(socket ,"username");
+        Client client = new Client(socket);
         client.listenForMessage();
         client.sendMessage();
 
 
     }
+
 
 }
