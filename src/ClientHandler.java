@@ -1,4 +1,5 @@
 import java.io.*;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 
@@ -7,65 +8,68 @@ public class ClientHandler implements Runnable {
     public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
 
     private Socket socket;
-    private BufferedReader bufferedReader;
-    private BufferedWriter bufferedWriter;
+
+    private ObjectInputStream objectInputStream;
+    private ObjectOutputStream objectOutputStream;
     private String clientUsername;
 
     public ClientHandler(Socket socket) {
         try {
             this.socket= socket ;
-            this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-            this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            this.clientUsername = bufferedReader.readLine();
+
+            this.objectInputStream = new ObjectInputStream(socket.getInputStream());
+            this.objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+
             clientHandlers.add(this);
 
-            broadcastMessage("SERVER: "+ clientUsername+ " has entered the chat ");
+            //broadcastMessage("SERVER: "+ clientUsername+ " has entered the chat ");
 
 
-        }catch (IOException e){
-            closeEverything(socket,bufferedReader,bufferedWriter);
+        }catch (IOException  e){
+            e.printStackTrace();
+            closeEverything(socket,objectInputStream,objectOutputStream);
         }
     }
 
     @Override
     public void run() {
-        String messageFromClient;
+        Request requestRecieved;
 
         while(socket.isConnected()){
             try {
-                messageFromClient = bufferedReader.readLine();
-                broadcastMessage(messageFromClient);
-            }catch (IOException e){
-                closeEverything(socket,bufferedReader,bufferedWriter);
+                requestRecieved = (Request) objectInputStream.readObject();
+                System.out.println(requestRecieved);
+                broadcastMessage(requestRecieved);
+            }catch (IOException | ClassNotFoundException e){
+                closeEverything(socket,objectInputStream,objectOutputStream);
                 break;
             }
         }
 
     }
-    public void broadcastMessage(String messageToSend){
+    public void broadcastMessage(Request request){
         for (ClientHandler clientHandler: clientHandlers) {
             try {
                 if (!clientHandler.clientUsername.equals(clientHandler)){
-                    clientHandler.bufferedWriter.write(messageToSend);
-                    clientHandler.bufferedWriter.newLine();
-                    clientHandler.bufferedWriter.flush();
+                   clientHandler.objectOutputStream.writeObject(request);
+                   System.out.println(request.toString());
                 }
             }catch (IOException e){
-                closeEverything(socket,bufferedReader,bufferedWriter);
+                closeEverything(socket,objectInputStream,objectOutputStream);
             }
         }
     }
     public void removeClientHandler(){
         clientHandlers.remove(this);
     }
-    public void closeEverything(Socket socket,BufferedReader bufferedReader,BufferedWriter bufferedWriter){
+    public void closeEverything(Socket socket,ObjectInputStream objectInputStream,ObjectOutputStream objectOutputStream){
         removeClientHandler();
         try {
-            if (bufferedReader != null){
-                bufferedWriter.close();
+            if (objectInputStream != null){
+                objectInputStream.close();
             }
-            if (bufferedReader != null){
-                bufferedReader.close();
+            if (objectOutputStream != null){
+                objectOutputStream.close();
 
             }
             if (socket != null){
@@ -75,6 +79,8 @@ public class ClientHandler implements Runnable {
             e.printStackTrace();
         }
     }
+
+
 }
 
 
