@@ -4,21 +4,48 @@ import java.util.ArrayList;
 public class Request implements Serializable {
     private String request, to,message, email,fullName,password;
     private ArrayList<String> onlineUsers;
+    private boolean data;
 
-    public Request(String request, String to, String message,String from) {
+
+
+    public void setMessage(String request, String to, String message){
         this.request = request;
         this.to = to;
         this.message = message;
     }
-    public Request (String request,String email,String password){
-        this.request = request;
-        this.email =email;
+
+    public void setSignup(String request, String fullName, String email,String password){
+        this.request =request;
+        this.email = email;
+        this.fullName = fullName;
         this.password = password;
     }
-    public Request (String request,String fullname){
-        this.request = request;
-        this.fullName = fullname;
+
+    public void setSignin(String request, String email ,String password){
+        this.request= request;
+        this.email = email;
+        this.password = password;
     }
+
+    public void setSigninAnswer(String request, String fullName){
+        this.request= request;
+        this.fullName = fullName;
+    }
+
+    public void setBoolean(String request , Boolean data){
+        this.request = request;
+        this.data = data;
+    }
+
+    public void setRequest(String request){
+        this.request= request;
+    }
+
+    public void setOnlineUsers(String request,ArrayList<String> onlineUsers) {
+        this.request= request;
+        this.onlineUsers = onlineUsers;
+    }
+
     @Override
     public String toString() {
         return "Request{" +
@@ -32,55 +59,27 @@ public class Request implements Serializable {
         return request;
     }
 
-    public void setRequest(String request) {
-        this.request = request;
-    }
-
     public String getTo() {
         return to;
-    }
-
-    public void setTo(String to) {
-        this.to = to;
     }
 
     public String getMessage() {
         return message;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
     public String getEmail() {
         return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
     }
 
     public String getFullName() {
         return fullName;
     }
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
-    }
-
     public String getPassword() {
         return password;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
     public ArrayList<String> getOnlineUsers() {
         return onlineUsers;
-    }
-
-    public void setOnlineUsers(ArrayList<String> onlineUsers) {
-        this.onlineUsers = onlineUsers;
     }
 }

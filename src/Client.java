@@ -32,24 +32,25 @@ public class Client {
 
             while (socket.isConnected()){
                 String messageToSend = scanner.nextLine();
-                Request r1 = new Request("message","yakup",messageToSend);
-                objectOutputStream.writeObject(r1);
+                Request messageRequest = new Request();
+                messageRequest.setMessage("message","yakup",messageToSend);
+                objectOutputStream.writeObject(messageRequest);
             }
         }catch (IOException  e){
             e.printStackTrace();
             closeEverything(socket,objectInputStream,objectOutputStream);
         }
     }
+
     public void listenForMessage(){
         new Thread(new Runnable() {
             @Override
             public void run() {
-                String msgFromGroupChat;
+
                 while (socket.isConnected()){
                     try {
-                        Request requestRecieved  = (Request) objectInputStream.readObject();
-                        msgFromGroupChat = requestRecieved.toString();
-                        System.out.println(msgFromGroupChat);
+                        Request requestReceived  = (Request) objectInputStream.readObject();
+                        requestHandler(requestReceived);
                     }catch (IOException | ClassNotFoundException e){
                         closeEverything(socket,objectInputStream,objectOutputStream);
                     }
@@ -74,13 +75,15 @@ public class Client {
             e.printStackTrace();
         }
     }
+
     private void login() throws IOException {
         System.out.println("enter email");
         String email = scanner.nextLine();
         System.out.println("enter password");
         String password = scanner.nextLine();
         System.out.println(email+password);
-        Request loginRequest = new Request("signin",email,password);
+        Request loginRequest = new Request();
+        loginRequest.setSignin("signin",email,password);
         System.out.println(loginRequest);
         objectOutputStream.writeObject(loginRequest);
     }
@@ -92,6 +95,8 @@ public class Client {
             this.activeUsers.clear();
             this.activeUsers.add("Everyone");
             this.activeUsers.addAll(request.getOnlineUsers());
+        }else if (request.getRequest().equals("sigin")){
+            this.fullName = request.getFullName();
         }
 
     }

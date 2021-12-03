@@ -11,7 +11,7 @@ public class DatabaseConnection {
             e.printStackTrace();
         }
     }
-    public String login(String email, String password){
+    public String signin(String email, String password){
         try {
 
             PreparedStatement statement = connection.prepareStatement("SELECT full_name FROM user WHERE email = ? AND password = ? ");
@@ -29,8 +29,31 @@ public class DatabaseConnection {
         return null;
     }
 
+    public boolean signup(String fullName,String email, String password){
+        try {
+            PreparedStatement statement = connection.prepareStatement("INSERT INTO user (full_name,email,password) VALUES (?,?,?)");
+            statement.setString(1,fullName);
+            statement.setString(2,email);
+            statement.setString(3,password);
+
+            int isSuccesful =statement.executeUpdate();
+
+            if (isSuccesful > 0){
+                return true;
+            }
+            return false;
+
+
+        }catch (SQLException e){
+            e.printStackTrace();
+            return false;
+        }
+
+    }
+
+
     public static void main(String[] args) {
         DatabaseConnection databaseConnection = new DatabaseConnection();
-
+        System.out.println(databaseConnection.signup("nurican","nuni","0101"));;
     }
 }
