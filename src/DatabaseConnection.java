@@ -11,6 +11,7 @@ public class DatabaseConnection {
             e.printStackTrace();
         }
     }
+
     public String signin(String email, String password){
         try {
 
@@ -25,6 +26,7 @@ public class DatabaseConnection {
             }
         }catch (SQLException e){
             e.printStackTrace();
+            return null;
         }
         return null;
     }
@@ -52,8 +54,10 @@ public class DatabaseConnection {
     }
 
 
+
+
     public static void main(String[] args) {
         DatabaseConnection databaseConnection = new DatabaseConnection();
-        System.out.println(databaseConnection.signup("nurican","nuni","0101"));;
+        System.out.println(databaseConnection.signup("yağız","ygz","3535"));;
     }
 }

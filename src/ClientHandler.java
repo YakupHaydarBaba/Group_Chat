@@ -38,6 +38,7 @@ public class ClientHandler implements Runnable {
         while(socket.isConnected()){
             try {
                 requestReceived = (Request) objectInputStream.readObject();
+                System.out.println(requestReceived);
                 requestHandler(requestReceived);
             }catch (IOException | ClassNotFoundException e){
                 closeEverything(socket,objectInputStream,objectOutputStream);
@@ -50,7 +51,7 @@ public class ClientHandler implements Runnable {
     public void broadcastMessage(Request request){
         for (ClientHandler clientHandler: clientHandlers) {
             try {
-                if (!clientHandler.clientFullName.equals(clientHandler)){
+                if (!clientHandler.clientFullName.equals(clientHandler.clientFullName)){
                    clientHandler.objectOutputStream.writeObject(request);
                 }
             }catch (IOException e){
@@ -99,27 +100,38 @@ public class ClientHandler implements Runnable {
 
 
     public void requestHandler(Request request){
-        if (request.getRequest().equals("signin")){
-            String name =dbConn.signin(request.getEmail(), request.getPassword());
-            if (name != null){
-                this.clientFullName = name;
-                clientNames.add(name);
+
+        try {
+            if (request.getRequest().equals("signin")) {
+                String name = dbConn.signin(request.getEmail(), request.getPassword());
                 Request loginRequest = new Request();
-                loginRequest.setSigninAnswer("signin",name);
+                System.out.println(name);
+                loginRequest.setSigninAnswer("signin", name);
+                objectOutputStream.writeObject(loginRequest);
+                if (name != null) {
+                    this.clientFullName = name;
+                    clientNames.add(name);
+                }
+            } else if (request.getRequest().equals("signup")) {
+                boolean isSuccessful = dbConn.signup(request.getFullName(), request.getEmail(), request.getPassword());
+                Request signupRequest = new Request();
+                signupRequest.setBoolean("signupBoolean", isSuccessful);
+                objectOutputStream.writeObject(signupRequest);
+
+            } else if (request.getRequest().equals("broadcast")) {
+                broadcastMessage(request);
+            } else if (request.getRequest().equals("privateMessage")) {
+                privateMessage(request);
+            } else if (request.getRequest().equals("activeUsers")) {
+                Request activeUserRequest = new Request();
+                ArrayList<String> activeClients = clientNames;
+                activeClients.remove(this.clientFullName);
+                activeUserRequest.setOnlineUsers("activeUsers", activeClients);
+                System.out.println(activeClients);
+                objectOutputStream.writeObject(activeUserRequest);
             }
-
-        }else if (request.getRequest().equals("signup")){
-            boolean isSuccessful = dbConn.signup(request.getFullName(),request.getEmail(),request.getPassword());
-            Request signupRequest = new Request();
-            signupRequest.setBoolean("signupBoolean",isSuccessful);
-
-        }else if (request.getRequest().equals("broadcast")){
-            broadcastMessage(request);
-        }else if (request.getRequest().equals("privateMessage")){
-            privateMessage(request);
-        }else if (request.getRequest().equals("activeUsers")){
-            Request activeUserRequest = new Request();
-            activeUserRequest.setOnlineUsers("activeUsers",clientNames);
+        }catch (IOException e){
+            e.printStackTrace();
         }
     }
 

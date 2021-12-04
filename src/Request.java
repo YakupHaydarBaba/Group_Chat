@@ -6,12 +6,25 @@ public class Request implements Serializable {
     private ArrayList<String> onlineUsers;
     private boolean data;
 
+    @Override
+    public String toString() {
+        return "Request{" +
+                "request='" + request + '\'' +
+                ", to='" + to + '\'' +
+                ", message='" + message + '\'' +
+                ", email='" + email + '\'' +
+                ", fullName='" + fullName + '\'' +
+                ", password='" + password + '\'' +
+                ", onlineUsers=" + onlineUsers +
+                ", data=" + data +
+                '}';
+    }
 
-
-    public void setMessage(String request, String to, String message){
+    public void setMessage(String request, String to, String message,String fullName ){
         this.request = request;
         this.to = to;
         this.message = message;
+        this.fullName = fullName;
     }
 
     public void setSignup(String request, String fullName, String email,String password){
@@ -46,15 +59,6 @@ public class Request implements Serializable {
         this.onlineUsers = onlineUsers;
     }
 
-    @Override
-    public String toString() {
-        return "Request{" +
-                "request='" + request + '\'' +
-                ", to='" + to + '\'' +
-                ", message='" + message + '\'' +
-                '}';
-    }
-
     public String getRequest() {
         return request;
     }
@@ -73,6 +77,10 @@ public class Request implements Serializable {
 
     public String getFullName() {
         return fullName;
+    }
+
+    public boolean isData() {
+        return data;
     }
 
     public String getPassword() {
