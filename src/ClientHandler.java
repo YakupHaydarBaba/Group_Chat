@@ -124,8 +124,13 @@ public class ClientHandler implements Runnable {
                 privateMessage(request);
             } else if (request.getRequest().equals("activeUsers")) {
                 Request activeUserRequest = new Request();
-                ArrayList<String> activeClients = clientNames;
-                activeClients.remove(this.clientFullName);
+                ArrayList<String> activeClients = new ArrayList<>();
+                for (String name :
+                        clientNames) {
+                    if (name != this.clientFullName){
+                        activeClients.add(name);
+                    }
+                }
                 activeUserRequest.setOnlineUsers("activeUsers", activeClients);
                 System.out.println(activeClients);
                 objectOutputStream.writeObject(activeUserRequest);
