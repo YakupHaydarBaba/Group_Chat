@@ -51,7 +51,7 @@ public class ClientHandler implements Runnable {
     public void broadcastMessage(Request request){
         for (ClientHandler clientHandler: clientHandlers) {
             try {
-                if (!clientHandler.clientFullName.equals(clientHandler.clientFullName)){
+                if (!clientHandler.clientFullName.equals(this.clientFullName)){
                    clientHandler.objectOutputStream.writeObject(request);
                 }
             }catch (IOException e){
