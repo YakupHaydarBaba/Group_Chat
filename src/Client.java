@@ -1,13 +1,15 @@
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.*;
 import java.net.Socket;
 import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-public class Client implements ActionListener {
+public class Client implements ActionListener, KeyListener {
     private Socket socket;
 
     private ObjectInputStream objectInputStream;
@@ -15,14 +17,14 @@ public class Client implements ActionListener {
     private String fullName;
     private Scanner scanner;
     private ArrayList<String> activeUsers;
-    private String messages="";
+    private String messages = "";
 
 
     public JFrame startScreen = new JFrame("Welcome");
     public JFrame signin = new JFrame("Sign-in");
     public JFrame signup = new JFrame("Sign-up");
     public JFrame chatScreen = new JFrame("Chat");
-    public JButton signinButton, signupButton, inButton, upButton, chatSendButton,refreshButton;
+    public JButton signinButton, signupButton, inButton, upButton, chatSendButton,inCancel,upCancel;
     public JTextField inEmail, upEmail, upFullname, messageField;
     public JTextArea messageArea;
     public JComboBox<String> activeUsersBox;
@@ -57,17 +59,17 @@ public class Client implements ActionListener {
             if (socket.isConnected()) {
                 String messageToSend = this.messageField.getText();
                 Request messageRequest = new Request();
-                int index =activeUsersBox.getSelectedIndex();
-                if(activeUsers.get(index).equals("Everyone")) {
-                    messageRequest.setMessage("broadcast", activeUsers.get(index), messageToSend,this.fullName);
+                int index = activeUsersBox.getSelectedIndex();
+                if (activeUsers.get(index).equals("Everyone")) {
+                    messageRequest.setMessage("broadcast", activeUsers.get(index), messageToSend, this.fullName);
                     objectOutputStream.writeObject(messageRequest);
                     messages += ("You: " + messageToSend + "\n");
                     this.messageArea.setText(messages);
                     this.messageField.setText("");
-                }else{
-                    messageRequest.setMessage("privateMessage", activeUsers.get(index), messageToSend,this.fullName);
+                } else {
+                    messageRequest.setMessage("privateMessage", activeUsers.get(index), messageToSend, this.fullName);
                     objectOutputStream.writeObject(messageRequest);
-                    messages += ("You : " + messageToSend + "(Sended to "+activeUsers.get(index)+")\n");
+                    messages += ("You : " + messageToSend + "(Sended to " + activeUsers.get(index) + ")\n");
                     this.messageArea.setText(messages);
                     this.messageField.setText("");
                 }
@@ -131,7 +133,7 @@ public class Client implements ActionListener {
     private void signup() {
         String password = String.valueOf(upPassword.getPassword());
         String password2 = String.valueOf(upPasswordRe.getPassword());
-        if (password.equals(password2) ) {
+        if (password.equals(password2)) {
             try {
                 String fullname = upFullname.getText();
                 String email = upEmail.getText();
@@ -140,10 +142,10 @@ public class Client implements ActionListener {
                 signupRequest.setSignup("signup", fullname, email, password);
 
                 objectOutputStream.writeObject(signupRequest);
-            }catch (IOException e){
+            } catch (IOException e) {
                 e.printStackTrace();
             }
-        }else {
+        } else {
             JOptionPane.showMessageDialog(this.signup,
                     "Passwords must be same",
                     "Warning",
@@ -154,37 +156,41 @@ public class Client implements ActionListener {
     private void requestHandler(Request request) {
 
         if (request.getRequest().equals("privateMessage")) {
-            messages += (request.getFullName() +": " + request.getMessage()+ " (private for you)\n");
+            messages += (request.getFullName() + ": " + request.getMessage() + " (private for you)\n");
             this.messageArea.setText(messages);
         } else if (request.getRequest().equals("broadcast")) {
-            messages += (request.getFullName() +": " + request.getMessage()+ " \n");
+            messages += (request.getFullName() + ": " + request.getMessage() + " \n");
             this.messageArea.setText(messages);
+            if (request.getFullName().equals("Server")) {
+                refreshActiveUsers();
+            }
         } else if (request.getRequest().equals("activeUsers")) {
             this.activeUsers.clear();
             this.activeUsers.add("Everyone");
             this.activeUsers.addAll(request.getOnlineUsers());
             populateComboBox();
         } else if (request.getRequest().equals("signin")) {
-            if( request.getFullName() != null) {
+            if (request.getFullName() != null) {
                 this.fullName = request.getFullName();
                 this.signin.setVisible(false);
                 this.chatScreen.setVisible(true);
-            }else if (request.getFullName() == null){
-                JOptionPane.showMessageDialog(this.signup,
+                refreshActiveUsers();
+            } else if (request.getFullName() == null) {
+                JOptionPane.showMessageDialog(this.signin,
                         "Email or password is incorrect. Try again.",
                         "Can't signin",
                         JOptionPane.ERROR_MESSAGE);
                 inEmail.setText("");
                 inPassword.setText("");
             }
-        } else if (request.getRequest().equals("signupBoolean")){
+        } else if (request.getRequest().equals("signupBoolean")) {
             if (request.isData()) {
                 JOptionPane.showMessageDialog(this.signup,
                         "Signup succesfull");
 
                 signup.setVisible(false);
                 signin.setVisible(true);
-            }else if (!request.isData()){
+            } else if (!request.isData()) {
                 JOptionPane.showMessageDialog(this.signup,
                         "Can't sign up try another email",
                         "Error occurred",
@@ -196,6 +202,16 @@ public class Client implements ActionListener {
 
     }
 
+    public void refreshActiveUsers() {
+        Request activeUsersRequest = new Request();
+        activeUsersRequest.setRequest("activeUsers");
+        try {
+            objectOutputStream.writeObject(activeUsersRequest);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
     public void populateComboBox() {
         activeUsersBox.removeAllItems();
         for (String user :
@@ -205,7 +221,6 @@ public class Client implements ActionListener {
         }
     }
 
-
     public void setStartScreen() {
         this.startScreen.setVisible(true);
         this.startScreen.setSize(300, 250);
@@ -213,16 +228,18 @@ public class Client implements ActionListener {
         this.startScreen.setLayout(null);
 
         this.signupButton = new JButton("Sign-up");
-        this.signupButton.setBounds(100, 50, 100, 30);
+        this.signupButton.setBounds(100, 100, 100, 30);
 
         this.signinButton = new JButton("Sign-in");
-        this.signinButton.setBounds(100, 100, 100, 30);
+        this.signinButton.setBounds(100, 50, 100, 30);
 
         this.signinButton.addActionListener(this);
         this.signupButton.addActionListener(this);
 
         this.startScreen.add(signinButton);
         this.startScreen.add(signupButton);
+
+        this.startScreen.setResizable(false);
     }
 
     public void setSigninScreen() {
@@ -230,6 +247,9 @@ public class Client implements ActionListener {
         this.signin.setSize(300, 400);
         this.signin.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.signin.setLayout(null);
+
+        this.inCancel = new JButton("Cancel");
+        this.inCancel.setBounds(100,300,100,30);
 
         this.inEmail = new JTextField();
         this.inEmail.setBounds(50, 50, 200, 50);
@@ -248,12 +268,19 @@ public class Client implements ActionListener {
         this.inButton.setBounds(100, 250, 100, 30);
         this.inButton.addActionListener(this);
 
+        this.signin.add(inCancel);
         this.signin.add(inEmail);
         this.signin.add(inPassword);
         this.signin.add(inButton);
         this.signin.add(inEmailLabel);
         this.signin.add(inPasswordLabel);
         this.signin.setVisible(false);
+
+        this.signin.setResizable(false);
+
+        inPassword.addKeyListener(this);
+        inEmail.addKeyListener(this);
+        inCancel.addActionListener(this);
     }
 
     public void setSignupScreen() {
@@ -267,7 +294,7 @@ public class Client implements ActionListener {
         JLabel upEmailLabel = new JLabel("Email");
         JLabel upFullnameLabel = new JLabel("Full Name");
 
-
+        this.upCancel = new JButton("Cancel");
         this.upFullname = new JTextField();
         this.upEmail = new JTextField();
         this.upPassword = new JPasswordField();
@@ -280,6 +307,7 @@ public class Client implements ActionListener {
         upEmailLabel.setBounds(50, 100, 100, 30);
         upFullnameLabel.setBounds(50, 30, 100, 30);
 
+        this.upCancel.setBounds(100,400,100,30);
         this.upPassword.setBounds(50, 270, 200, 30);
         this.upPasswordRe.setBounds(50, 200, 200, 30);
         this.upEmail.setBounds(50, 130, 200, 30);
@@ -288,6 +316,7 @@ public class Client implements ActionListener {
         this.upButton.setBounds(100, 350, 100, 30);
         this.upButton.addActionListener(this);
 
+        this.signup.add(upCancel);
         this.signup.add(upFullname);
         this.signup.add(upEmail);
         this.signup.add(upPasswordRe);
@@ -299,10 +328,14 @@ public class Client implements ActionListener {
         this.signup.add(upButton);
 
         this.signup.setVisible(false);
+        this.signup.setResizable(false);
 
-
+        this.upPassword.addKeyListener(this);
+        this.upPasswordRe.addKeyListener(this);
+        this.upEmail.addKeyListener(this);
+        this.upFullname.addKeyListener(this);
+        upCancel.addActionListener(this);
     }
-
 
     public void setChatScreen() {
         chatScreen.setSize(700, 450);
@@ -314,14 +347,12 @@ public class Client implements ActionListener {
         this.chatSendButton = new JButton("Send");
         this.activeUsersBox = new JComboBox<>();
         this.scrollBar = new JScrollBar();
-        this.refreshButton = new JButton("0");
 
 
         this.messageArea.setBounds(10, 10, 410, 300);
         this.messageField.setBounds(10, 320, 300, 30);
         this.chatSendButton.setBounds(320, 320, 100, 30);
         this.activeUsersBox.setBounds(450, 10, 200, 20);
-        this.refreshButton.setBounds(660,10,20,20);
 
 
         this.messageArea.setEnabled(false);
@@ -331,11 +362,12 @@ public class Client implements ActionListener {
         this.chatScreen.add(messageField);
         this.chatScreen.add(chatSendButton);
         this.chatScreen.add(activeUsersBox);
-        this.chatScreen.add(refreshButton);
-        this.refreshButton.addActionListener(this);
         this.chatSendButton.addActionListener(this);
 
         this.chatScreen.setVisible(false);
+        this.chatScreen.setResizable(false);
+
+        messageField.addKeyListener(this);
 
     }
 
@@ -347,9 +379,7 @@ public class Client implements ActionListener {
         client.listenForMessage();
 
 
-
     }
-
 
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -362,27 +392,60 @@ public class Client implements ActionListener {
             signup.setVisible(true);
         }
         if (e.getSource().equals(inButton)) {
-            login();
-        }
-        if (e.getSource().equals(upButton)) {
-            signup();
-        }
-        if (e.getSource().equals(refreshButton)){
-            Request activeUsersRequest = new Request();
-            activeUsersRequest.setRequest("activeUsers");
-            try {
-                objectOutputStream.writeObject(activeUsersRequest);
-            } catch (IOException ex) {
-                ex.printStackTrace();
+            if (!inEmail.getText().equals("") && !String.valueOf(inPassword.getPassword()).equals("")) {
+                login();
+            } else if (inEmail.getText().equals("") || String.valueOf(inPassword.getPassword()).equals("")) {
+                JOptionPane.showMessageDialog(this.signin,
+                        "Please fill in all blank fields.",
+                        "Can't sign-in",
+                        JOptionPane.ERROR_MESSAGE);
             }
 
         }
-        if (e.getSource().equals(chatSendButton)){
-            if (!this.messageField.getText().equals("")){
+        if (e.getSource().equals(upButton)) {
+            if (!upEmail.getText().equals("") && !upFullname.getText().equals("") && !String.valueOf(upPassword.getPassword()).equals("") && !String.valueOf(upPasswordRe.getPassword()).equals(""))
+                signup();
+            else if (upEmail.getText().equals("") || upFullname.getText().equals("") || String.valueOf(upPassword.getPassword()).equals("") || String.valueOf(upPasswordRe.getPassword()).equals(""))
+                JOptionPane.showMessageDialog(this.signup,
+                        "Please fill in all blank fields.",
+                        "Can't sign-up",
+                        JOptionPane.ERROR_MESSAGE);
+        }
+        if (e.getSource().equals(chatSendButton)) {
+            if (!this.messageField.getText().equals("")) {
                 sendMessage();
+            }
+        }
+        if (e.getSource().equals(inCancel)){
+            signin.setVisible(false);
+            startScreen.setVisible(true);
+        }
+        if (e.getSource().equals(upCancel)){
+            signup.setVisible(false);
+            startScreen.setVisible(true);
+        }
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+            if (chatScreen.isVisible()) {
+                chatSendButton.doClick();
+            } else if (signin.isVisible()) {
+                inButton.doClick();
+            } else if (signup.isActive()) {
+                upButton.doClick();
             }
         }
     }
 
+    @Override
+    public void keyReleased(KeyEvent e) {
 
+    }
 }

@@ -111,6 +111,9 @@ public class ClientHandler implements Runnable {
                 if (name != null) {
                     this.clientFullName = name;
                     clientNames.add(name);
+                    Request loginMessage = new Request();
+                    loginMessage.setMessage("broadcast","Everyone",name+" has entered.", "Server");
+                    broadcastMessage(loginMessage);
                 }
             } else if (request.getRequest().equals("signup")) {
                 boolean isSuccessful = dbConn.signup(request.getFullName(), request.getEmail(), request.getPassword());
