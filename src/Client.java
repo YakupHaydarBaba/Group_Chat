@@ -11,7 +11,7 @@ import java.util.Scanner;
 
 public class Client implements ActionListener, KeyListener {
     private Socket socket;
-
+    //properties
     private ObjectInputStream objectInputStream;
     private ObjectOutputStream objectOutputStream;
     private String fullName;
@@ -24,14 +24,14 @@ public class Client implements ActionListener, KeyListener {
     public JFrame signin = new JFrame("Sign-in");
     public JFrame signup = new JFrame("Sign-up");
     public JFrame chatScreen = new JFrame("Chat");
-    public JButton signinButton, signupButton, inButton, upButton, chatSendButton,inCancel,upCancel;
+    public JButton signinButton, signupButton, inButton, upButton, chatSendButton, inCancel, upCancel;
     public JTextField inEmail, upEmail, upFullname, messageField;
     public JTextArea messageArea;
     public JComboBox<String> activeUsersBox;
     public JScrollBar scrollBar;
     public JPasswordField inPassword, upPassword, upPasswordRe;
 
-
+    // setting screens and input output streams
     public Client(Socket socket) {
         try {
             setChatScreen();
@@ -52,7 +52,7 @@ public class Client implements ActionListener, KeyListener {
             closeEverything(socket, objectInputStream, objectOutputStream);
         }
     }
-
+    // sending message in the message field
     public void sendMessage() {
         try {
 
@@ -62,12 +62,14 @@ public class Client implements ActionListener, KeyListener {
                 int index = activeUsersBox.getSelectedIndex();
                 if (activeUsers.get(index).equals("Everyone")) {
                     messageRequest.setMessage("broadcast", activeUsers.get(index), messageToSend, this.fullName);
+                    messageRequest.encryptRequest();
                     objectOutputStream.writeObject(messageRequest);
                     messages += ("You: " + messageToSend + "\n");
                     this.messageArea.setText(messages);
                     this.messageField.setText("");
                 } else {
                     messageRequest.setMessage("privateMessage", activeUsers.get(index), messageToSend, this.fullName);
+                    messageRequest.encryptRequest();
                     objectOutputStream.writeObject(messageRequest);
                     messages += ("You : " + messageToSend + "(Sended to " + activeUsers.get(index) + ")\n");
                     this.messageArea.setText(messages);
@@ -79,7 +81,7 @@ public class Client implements ActionListener, KeyListener {
             closeEverything(socket, objectInputStream, objectOutputStream);
         }
     }
-
+    //listens for requests coming from server
     public void listenForMessage() {
         new Thread(new Runnable() {
             @Override
@@ -88,7 +90,7 @@ public class Client implements ActionListener, KeyListener {
                 while (socket.isConnected()) {
                     try {
                         Request requestReceived = (Request) objectInputStream.readObject();
-                        System.out.println(requestReceived);
+                        requestReceived.decryptRequest();
                         requestHandler(requestReceived);
                     } catch (IOException | ClassNotFoundException e) {
                         closeEverything(socket, objectInputStream, objectOutputStream);
@@ -97,7 +99,7 @@ public class Client implements ActionListener, KeyListener {
             }
         }).start();
     }
-
+    //This method closes everything if something bad happens :/
     public void closeEverything(Socket socket, ObjectInputStream objectInputStream, ObjectOutputStream objectOutputStream) {
         try {
             if (objectInputStream != null) {
@@ -114,7 +116,7 @@ public class Client implements ActionListener, KeyListener {
             e.printStackTrace();
         }
     }
-
+    // sending login request
     private void login() {
         try {
             String email = inEmail.getText();
@@ -123,13 +125,13 @@ public class Client implements ActionListener, KeyListener {
 
             Request loginRequest = new Request();
             loginRequest.setSignin("signin", email, password);
-
+            loginRequest.encryptRequest();
             objectOutputStream.writeObject(loginRequest);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
+    //sending signup request
     private void signup() {
         String password = String.valueOf(upPassword.getPassword());
         String password2 = String.valueOf(upPasswordRe.getPassword());
@@ -140,7 +142,7 @@ public class Client implements ActionListener, KeyListener {
 
                 Request signupRequest = new Request();
                 signupRequest.setSignup("signup", fullname, email, password);
-
+                signupRequest.encryptRequest();
                 objectOutputStream.writeObject(signupRequest);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -152,7 +154,7 @@ public class Client implements ActionListener, KeyListener {
                     JOptionPane.ERROR_MESSAGE);
         }
     }
-
+    // takes requests and handle them
     private void requestHandler(Request request) {
 
         if (request.getRequest().equals("privateMessage")) {
@@ -201,17 +203,18 @@ public class Client implements ActionListener, KeyListener {
         }
 
     }
-
+    //sending active user request to server
     public void refreshActiveUsers() {
         Request activeUsersRequest = new Request();
         activeUsersRequest.setRequest("activeUsers");
         try {
+            activeUsersRequest.encryptRequest();
             objectOutputStream.writeObject(activeUsersRequest);
         } catch (IOException ex) {
             ex.printStackTrace();
         }
     }
-
+    //populates combobox with user list
     public void populateComboBox() {
         activeUsersBox.removeAllItems();
         for (String user :
@@ -220,7 +223,7 @@ public class Client implements ActionListener, KeyListener {
             activeUsersBox.addItem(user);
         }
     }
-
+    //setting start screen
     public void setStartScreen() {
         this.startScreen.setVisible(true);
         this.startScreen.setSize(300, 250);
@@ -241,7 +244,7 @@ public class Client implements ActionListener, KeyListener {
 
         this.startScreen.setResizable(false);
     }
-
+    // setting sign in screen
     public void setSigninScreen() {
 
         this.signin.setSize(300, 400);
@@ -249,7 +252,7 @@ public class Client implements ActionListener, KeyListener {
         this.signin.setLayout(null);
 
         this.inCancel = new JButton("Cancel");
-        this.inCancel.setBounds(100,300,100,30);
+        this.inCancel.setBounds(100, 300, 100, 30);
 
         this.inEmail = new JTextField();
         this.inEmail.setBounds(50, 50, 200, 50);
@@ -282,7 +285,7 @@ public class Client implements ActionListener, KeyListener {
         inEmail.addKeyListener(this);
         inCancel.addActionListener(this);
     }
-
+    // setting sign up screen
     public void setSignupScreen() {
         this.signup.setSize(300, 500);
         this.signup.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -307,7 +310,7 @@ public class Client implements ActionListener, KeyListener {
         upEmailLabel.setBounds(50, 100, 100, 30);
         upFullnameLabel.setBounds(50, 30, 100, 30);
 
-        this.upCancel.setBounds(100,400,100,30);
+        this.upCancel.setBounds(100, 400, 100, 30);
         this.upPassword.setBounds(50, 270, 200, 30);
         this.upPasswordRe.setBounds(50, 200, 200, 30);
         this.upEmail.setBounds(50, 130, 200, 30);
@@ -336,7 +339,7 @@ public class Client implements ActionListener, KeyListener {
         this.upFullname.addKeyListener(this);
         upCancel.addActionListener(this);
     }
-
+    //setting chat screen
     public void setChatScreen() {
         chatScreen.setSize(700, 450);
         chatScreen.setLayout(null);
@@ -355,6 +358,7 @@ public class Client implements ActionListener, KeyListener {
         this.activeUsersBox.setBounds(450, 10, 200, 20);
 
 
+
         this.messageArea.setEnabled(false);
         activeUsersBox.addItem("Everyone");
 
@@ -370,7 +374,7 @@ public class Client implements ActionListener, KeyListener {
         messageField.addKeyListener(this);
 
     }
-
+    //main
     public static void main(String[] args) throws IOException {
         Scanner scan = new Scanner(System.in);
         ;
@@ -381,7 +385,7 @@ public class Client implements ActionListener, KeyListener {
 
     }
 
-    @Override
+    @Override// actionlistener for buttons
     public void actionPerformed(ActionEvent e) {
         if (e.getSource().equals(signinButton)) {
             startScreen.setVisible(false);
@@ -416,11 +420,11 @@ public class Client implements ActionListener, KeyListener {
                 sendMessage();
             }
         }
-        if (e.getSource().equals(inCancel)){
+        if (e.getSource().equals(inCancel)) {
             signin.setVisible(false);
             startScreen.setVisible(true);
         }
-        if (e.getSource().equals(upCancel)){
+        if (e.getSource().equals(upCancel)) {
             signup.setVisible(false);
             startScreen.setVisible(true);
         }
@@ -431,7 +435,7 @@ public class Client implements ActionListener, KeyListener {
 
     }
 
-    @Override
+    @Override//keylistener for sending with enter
     public void keyPressed(KeyEvent e) {
         if (e.getKeyCode() == KeyEvent.VK_ENTER) {
             if (chatScreen.isVisible()) {
